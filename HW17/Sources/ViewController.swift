@@ -8,6 +8,7 @@
 import UIKit
 
 class ViewController: UIViewController {
+    private var isBackgroundColorWhite = false
 
     // MARK: - UI Elements
     private lazy var passwordField: UITextField = {
@@ -15,7 +16,7 @@ class ViewController: UIViewController {
         passwordField.placeholder = "Password"
         passwordField.textAlignment = .center
         passwordField.font = .systemFont(ofSize: 15)
-        passwordField.layer.borderWidth = 0.5
+        passwordField.backgroundColor = .systemGray
         passwordField.isSecureTextEntry = true
         passwordField.layer.cornerRadius = 20
         passwordField.translatesAutoresizingMaskIntoConstraints = false
@@ -32,6 +33,7 @@ class ViewController: UIViewController {
         let label = UILabel()
         label.text = "Pass"
         label.font = .systemFont(ofSize: 20, weight: .bold)
+        label.textColor = .systemGray
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -46,6 +48,7 @@ class ViewController: UIViewController {
         button.layer.masksToBounds = true
         button.layer.cornerRadius = 20
         button.backgroundColor = .systemGray
+        button.addTarget(self, action: #selector(generatePassword), for: .touchUpInside)
         return button
     }()
 
@@ -59,6 +62,7 @@ class ViewController: UIViewController {
         button.layer.masksToBounds = true
         button.layer.cornerRadius = 20
         button.backgroundColor = .systemGray
+        button.addTarget(self, action: #selector(changeBackgroundColor), for: .touchUpInside)
         return button
     }()
 
@@ -76,8 +80,6 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         setupHierarchy()
         setupLayout()
-        view.backgroundColor = .systemBackground
-        activityIndicator.startAnimating()
     }
 
     // MARK: - Setup
@@ -123,14 +125,28 @@ class ViewController: UIViewController {
 
         while password != passwordToUnlock {
             password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
-            print(password)
         }
-        print(password)
+
+        passwordField.text = password
+        passwordField.isSecureTextEntry = false
+        passwordLabel.text = password
+
     }
 
     // MARK: - Action
+    @objc func changeBackgroundColor() {
+        if isBackgroundColorWhite {
+            view.backgroundColor = .black
+            isBackgroundColorWhite.toggle()
+        } else {
+            view.backgroundColor = .systemBackground
+            isBackgroundColorWhite.toggle()
+        }
+    }
 
-
-
+    @objc func generatePassword() {
+        activityIndicator.startAnimating()
+        bruteForce(passwordToUnlock: "e22")
+    }
 }
 
