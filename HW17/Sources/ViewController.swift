@@ -9,6 +9,7 @@ import UIKit
 
 class ViewController: UIViewController {
     private var isBackgroundColorWhite = false
+    private let queue = DispatchQueue.global(qos: .utility)
 
     // MARK: - UI Elements
     private lazy var passwordField: UITextField = {
@@ -31,7 +32,6 @@ class ViewController: UIViewController {
 
     private lazy var passwordLabel: UILabel = {
         let label = UILabel()
-        label.text = "Pass"
         label.font = .systemFont(ofSize: 20, weight: .bold)
         label.textColor = .systemGray
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -98,13 +98,14 @@ class ViewController: UIViewController {
             activityIndicator.topAnchor.constraint(equalTo: view.topAnchor, constant: 80),
 
             passwordField.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 100),
-            passwordField.bottomAnchor.constraint(equalTo: passwordLabel.topAnchor, constant: -100),
+            passwordField.bottomAnchor.constraint(equalTo: passwordLabel.topAnchor, constant: -80),
             passwordField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             passwordField.widthAnchor.constraint(equalToConstant: 300),
             passwordField.heightAnchor.constraint(equalToConstant: 44),
 
             passwordLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             passwordLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            passwordLabel.heightAnchor.constraint(equalToConstant: 40),
 
             backgroundColorButton.heightAnchor.constraint(equalToConstant: 44),
             backgroundColorButton.widthAnchor.constraint(equalToConstant: 150),
@@ -123,14 +124,18 @@ class ViewController: UIViewController {
         let ALLOWED_CHARACTERS: [String] = String().printable.map { String($0) }
         var password: String = ""
 
-        while password != passwordToUnlock {
-            password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
+        queue.async {
+            while password != passwordToUnlock {
+                password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
+            }
+
+            DispatchQueue.main.async {
+                self.passwordField.text = password
+                self.passwordField.isSecureTextEntry = false
+                self.passwordLabel.text = "Password: \(password)"
+                self.activityIndicator.stopAnimating()
+            }
         }
-
-        passwordField.text = password
-        passwordField.isSecureTextEntry = false
-        passwordLabel.text = password
-
     }
 
     // MARK: - Action
@@ -145,8 +150,9 @@ class ViewController: UIViewController {
     }
 
     @objc func generatePassword() {
+        let pass = passwordField.text
         activityIndicator.startAnimating()
-        bruteForce(passwordToUnlock: "e22")
+        bruteForce(passwordToUnlock: pass ?? "")
     }
 }
 
