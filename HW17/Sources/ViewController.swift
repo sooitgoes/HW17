@@ -9,7 +9,8 @@ import UIKit
 
 class ViewController: UIViewController {
     private var isBackgroundColorWhite = false
-    private let queue = DispatchQueue.global(qos: .utility)
+    private var isStartGenerate = false
+    private let queue = DispatchQueue.global(qos: .userInitiated)
 
     // MARK: - UI Elements
     private lazy var passwordField: UITextField = {
@@ -74,6 +75,21 @@ class ViewController: UIViewController {
         return stack
     }()
 
+    private lazy var stopButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Stop generate", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
+        button.titleLabel?.numberOfLines = 0
+        button.titleLabel?.textAlignment = .center
+        button.setTitleColor(.white, for: .normal)
+        button.layer.masksToBounds = true
+        button.layer.cornerRadius = 20
+        button.backgroundColor = .systemGray
+        button.addTarget(self, action: #selector(stopGenerate), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -90,6 +106,7 @@ class ViewController: UIViewController {
         view.addSubview(passwordField)
         view.addSubview(passwordLabel)
         view.addSubview(stackButtons)
+        view.addSubview(stopButton)
     }
 
     private func setupLayout() {
@@ -114,9 +131,12 @@ class ViewController: UIViewController {
             buttonForPasswordGeneration.widthAnchor.constraint(equalToConstant: 150),
 
             stackButtons.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            stackButtons.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -120)
+            stackButtons.bottomAnchor.constraint(equalTo: stopButton.topAnchor, constant: -20),
 
-
+            stopButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stopButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -50),
+            stopButton.heightAnchor.constraint(equalToConstant: 44),
+            stopButton.widthAnchor.constraint(equalToConstant: 150)
         ])
     }
 
@@ -125,14 +145,19 @@ class ViewController: UIViewController {
         var password: String = ""
 
         queue.async {
-            while password != passwordToUnlock {
+            self.isStartGenerate.toggle()
+            while password != passwordToUnlock && self.isStartGenerate {
                 password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
+
+                DispatchQueue.main.async {
+                    self.passwordLabel.text = "Password: \(password)"
+                }
             }
 
             DispatchQueue.main.async {
                 self.passwordField.text = password
-                self.passwordField.isSecureTextEntry = false
                 self.passwordLabel.text = "Password: \(password)"
+                self.passwordField.isSecureTextEntry = false
                 self.activityIndicator.stopAnimating()
             }
         }
@@ -150,9 +175,19 @@ class ViewController: UIViewController {
     }
 
     @objc func generatePassword() {
-        let pass = passwordField.text
+        let password = passwordField.text
         activityIndicator.startAnimating()
-        bruteForce(passwordToUnlock: pass ?? "")
+        bruteForce(passwordToUnlock: password ?? "")
+
+    }
+
+    @objc func stopGenerate() {
+        isStartGenerate.toggle()
+        DispatchQueue.main.async {
+            self.activityIndicator.stopAnimating()
+            self.passwordLabel.text = "This password is safe"
+            self.activityIndicator.stopAnimating()
+        }
     }
 }
 
