@@ -10,7 +10,7 @@ import UIKit
 class ViewController: UIViewController {
     private var isBackgroundColorWhite = false
     private var isStartGenerate = false
-    private let queue = DispatchQueue.global(qos: .userInitiated)
+    private let queue = DispatchQueue.global(qos: .utility)
 
     // MARK: - UI Elements
     private lazy var passwordField: UITextField = {
@@ -140,14 +140,36 @@ class ViewController: UIViewController {
         ])
     }
 
+    // MARK: - Action
+    @objc func changeBackgroundColor() {
+        view.backgroundColor = isBackgroundColorWhite ? .black : .systemBackground
+        isBackgroundColorWhite.toggle()
+    }
+
+    @objc func generatePassword() {
+        let password = passwordField.text
+        activityIndicator.startAnimating()
+        bruteForce(passwordToUnlock: password ?? "")
+    }
+
+    @objc func stopGenerate() {
+        isStartGenerate.toggle()
+        DispatchQueue.main.async {
+            self.passwordLabel.text = "This password is safe"
+        }
+    }
+}
+
+// MARK: - Methods for generate password
+extension ViewController {
     func bruteForce(passwordToUnlock: String) {
         let ALLOWED_CHARACTERS: [String] = String().printable.map { String($0) }
         var password: String = ""
 
         queue.async {
-            self.isStartGenerate.toggle()
+            self.isStartGenerate = true
             while password != passwordToUnlock && self.isStartGenerate {
-                password = generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
+                password = self.generateBruteForce(password, fromArray: ALLOWED_CHARACTERS)
 
                 DispatchQueue.main.async {
                     self.passwordLabel.text = "Password: \(password)"
@@ -163,31 +185,30 @@ class ViewController: UIViewController {
         }
     }
 
-    // MARK: - Action
-    @objc func changeBackgroundColor() {
-        if isBackgroundColorWhite {
-            view.backgroundColor = .black
-            isBackgroundColorWhite.toggle()
-        } else {
-            view.backgroundColor = .systemBackground
-            isBackgroundColorWhite.toggle()
-        }
+    func indexOf(character: Character, _ array: [String]) -> Int {
+        return array.firstIndex(of: String(character))!
     }
 
-    @objc func generatePassword() {
-        let password = passwordField.text
-        activityIndicator.startAnimating()
-        bruteForce(passwordToUnlock: password ?? "")
-
+    func characterAt(index: Int, _ array: [String]) -> Character {
+        return index < array.count ? Character(array[index])
+        : Character("")
     }
 
-    @objc func stopGenerate() {
-        isStartGenerate.toggle()
-        DispatchQueue.main.async {
-            self.activityIndicator.stopAnimating()
-            self.passwordLabel.text = "This password is safe"
-            self.activityIndicator.stopAnimating()
+    func generateBruteForce(_ string: String, fromArray array: [String]) -> String {
+        var str: String = string
+
+        if str.count <= 0 {
+            str.append(characterAt(index: 0, array))
         }
+        else {
+            str.replace(at: str.count - 1,
+                        with: characterAt(index: (indexOf(character: str.last!, array) + 1) % array.count, array))
+
+            if indexOf(character: str.last!, array) == 0 {
+                str = String(generateBruteForce(String(str.dropLast()), fromArray: array)) + String(str.last!)
+            }
+        }
+
+        return str
     }
 }
-
